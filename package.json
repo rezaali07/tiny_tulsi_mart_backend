@@ -1,0 +1,43 @@
+{
+    "name": "backend",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "directories": {
+        "test": "test"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "nodemon server.js"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@material-ui/core": "^4.12.4",
+        "bcryptjs": "^3.0.2",
+        "body-parser": "^1.20.3",
+        "cloudinary": "^2.7.0",
+        "cookie-parser": "^1.4.7",
+        "cors": "^2.8.5",
+        "csurf": "^1.11.0",
+        "dotenv": "^17.2.0",
+        "express": "^4.21.2",
+        "express-fileupload": "^1.5.2",
+        "express-mongo-sanitize": "^2.2.0",
+        "express-validator": "^7.2.1",
+        "file-type": "^21.0.0",
+        "jsonwebtoken": "^9.0.2",
+        "mongoose": "^8.16.4",
+        "multer": "^2.0.2",
+        "nodemailer": "^7.0.5",
+        "nodemon": "^3.1.10",
+        "npm": "^11.4.2",
+        "otp-generator": "^4.0.1",
+        "qrcode": "^1.5.4",
+        "speakeasy": "^2.0.0",
+        "stripe": "^18.3.0",
+        "validator": "^13.15.15",
+        "winston": "^3.17.0",
+        "winston-mongodb": "^7.0.0"
+    }
+}
