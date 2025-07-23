@@ -1,5 +1,7 @@
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 
+require("dotenv").config(); // <-- Load env vars (add this if not already loaded)
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.Payment = catchAsyncErrors(async (req, res, next) => {
   const myPayment = await stripe.paymentIntents.create({
