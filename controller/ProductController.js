@@ -120,6 +120,28 @@ exports.updateProduct = catchAsyncErrors(async (req, res, next) => {
 //     message: "Product is deleted successfully",
 //   });
 // });
+// Bulk sync entire favorites array
+exports.syncFavorites = catchAsyncErrors(async (req, res, next) => {
+  const userId = req.user._id;
+  const { favourites } = req.body;
 
+  if (!Array.isArray(favourites)) {
+    return next(new ErrorHandler("favourites must be an array", 400));
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return next(new ErrorHandler("User not found", 404));
+  }
+
+  user.favorites = favourites;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Favorites synced successfully",
+    favorites: user.favorites,
+  });
 
 });
