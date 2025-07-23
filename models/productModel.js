@@ -40,6 +40,31 @@ const productSchema = new mongoose.Schema({
       },
     },
   ],
-
+  },
+      name: {
+        type: String,
+        required: true,
+      },
+      rating: {
+        type: Number,
+        required: true,
+      },
+      comment: {
+        type: String,
+      },
+      time: {
+        type: Date,
+        default: Date.now(),
+      },
+    },
+  ],
+  user: {
+    type: mongoose.Schema.ObjectId,
+    ref: "User",
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now(),
+  },
 
 module.exports = mongoose.model("Product", productSchema);
