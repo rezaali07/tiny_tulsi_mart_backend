@@ -121,6 +121,37 @@ exports.updateProduct = catchAsyncErrors(async (req, res, next) => {
 //   });
 // });
 // Bulk sync entire favorites array
+
+// Bulk sync entire cart array
+exports.syncCart = catchAsyncErrors(async (req, res, next) => {
+  const userId = req.user._id;
+  const { cartItems } = req.body;
+
+  if (!Array.isArray(cartItems)) {
+    return next(new ErrorHandler("cartItems must be an array", 400));
+  }
+
+  // Validate and map items: ensure product and quantity exist and quantity > 0
+  const validatedCart = cartItems.filter(item =>
+    item.product && item.quantity && item.quantity > 0
+  );
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return next(new ErrorHandler("User not found", 404));
+  }
+
+  user.cart = validatedCart;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Cart synced successfully",
+    cart: user.cart,
+  });
+});
+
 exports.syncFavorites = catchAsyncErrors(async (req, res, next) => {
   const userId = req.user._id;
   const { favourites } = req.body;
