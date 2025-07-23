@@ -18,7 +18,19 @@ class Features {
         return this;
     }
 
-    
+    filter() {
+        const queryCopy = { ...this.queryStr };
+
+        // ✅ Fixed: removed trailing space from "page"
+        const removeFields = ["keyword", "page", "limit"];
+        removeFields.forEach((key) => delete queryCopy[key]);
+
+        // Optional: Debug log to verify cleaned query
+        console.log("🔍 Filter query (after cleanup):", queryCopy);
+
+        this.query = this.query.find(queryCopy);
+        return this;
+    }
 
     pagination(resultPerPage) {
         const currentPage = Number(this.queryStr.page) || 1;
