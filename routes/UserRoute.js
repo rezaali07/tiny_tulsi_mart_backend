@@ -19,4 +19,10 @@ router.post("/send-otp", sendOtpToEmail);
 router.post("/verify-otp-register", verifyOtpAndCreateUser);
 
 
+router.post("/send-login-otp", sendLoginOtp);
+router.post("/login/verify-login-otp", verifyLoginOtp);
+
+// Password update OTP routes
+router.post("/password/update/send-otp", isAuthenticatedUser, sendUpdatePasswordOtp);
+router.post("/password/update/verify-otp", isAuthenticatedUser, verifyUpdatePasswordOtp);
 module.exports = router;
