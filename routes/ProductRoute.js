@@ -22,6 +22,15 @@ const router = express.Router();
 // Public product routes
 router.route("/products").get(getAllProducts);
 router.route("/product/:id").get(getSingleProduct);
+
+// Admin product routes
+router
+  .route("/admin/products")
+  .get(isAuthenticatedUser, authorizedRoles("admin"), getAllProducts);
+
+// Public product routes
+router.route("/products").get(getAllProducts);
+router.route("/product/:id").get(getSingleProduct);
 // Bulk sync entire cart array
 router.route("/cart").post(isAuthenticatedUser, async (req, res) => {
   try {
