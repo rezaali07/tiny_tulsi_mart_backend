@@ -65,6 +65,24 @@ exports.getOrderHistory = catchAsyncErrors(async (req, res, next) => {
   res.status(200).json(orderHistory);
 });
 
+
+// get all orders =======admin only
+exports.getAllOrdersAdmin = catchAsyncErrors(async (req, res, next) => {
+  const orders = await Order.find();
+
+  let totalAmount = 0;
+  orders.forEach((order) => {
+    totalAmount += order.totalPrice;
+  });
+
+  res.status(200).json({
+    success: true,
+    totalAmount,
+    orders,
+  });
+}); 
+
+
 //update order status === admin
 exports.updateOrderAdmin = catchAsyncErrors(async (req, res, next) => {
   const order = await Order.findById(req.params.id);
