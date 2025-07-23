@@ -23,5 +23,25 @@ const router = express.Router();
 router.route("/products").get(getAllProducts);
 router.route("/product/:id").get(getSingleProduct);
 
+// Bulk sync entire favorites array
+router.route("/favorites").post(isAuthenticatedUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { favourites } = req.body;
+
+    if (!Array.isArray(favourites)) {
+      return res.status(400).json({ success: false, message: "favourites must be an array" });
+    }
+
+    // TODO: Implement logic to save favourites array in your DB for userId
+    // Example: await FavoriteModel.updateOne({ user: userId }, { favourites }, { upsert: true });
+
+    return res.status(200).json({ success: true, message: "Favorites synced successfully" });
+  } catch (error) {
+    console.error("Error syncing favorites:", error);
+    return res.status(500).json({ success: false, message: "Server error syncing favorites" });
+  }
+});
+
 
 module.exports = router;
