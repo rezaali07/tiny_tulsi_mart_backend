@@ -65,6 +65,22 @@ const OrderSchema = new mongoose.Schema({
       type: String,
       required: true,
     },
+  },
+  paidAt: {
+    type: Date,
+    required: true,
+  },
+  itemsPrice: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  taxPrice: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
   
+});
 
 module.exports = mongoose.model("Order", OrderSchema);
