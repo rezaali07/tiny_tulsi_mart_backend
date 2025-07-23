@@ -10,7 +10,6 @@ module.exports = (err, req, res, next) => {
     err = new ErrorHandler(message, 400);
   }
 
-
   // dublicate error solve code
   if (err.code === 11000) {
     const message = `Duplicate value: ${Object.keys(err.keyValue)} Entered`;
@@ -22,6 +21,13 @@ module.exports = (err, req, res, next) => {
     const message = `Invalid url so plz try again: ${err.message}`;
     err = new ErrorHandler(message, 400);
   }
+
+  //jwt expire error
+  if (err.name === "TokenExpiredError") {
+    const message = `Token url Expired: ${err.message}`;
+    err = new ErrorHandler(message, 400);
+  }
+
 
   res.status(err.statusCode).json({
     success: false,
