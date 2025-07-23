@@ -123,6 +123,24 @@ exports.updateProduct = catchAsyncErrors(async (req, res, next) => {
 // Bulk sync entire favorites array
 
 // Bulk sync entire cart array
+
+
+  // Remove bought products from cart
+  productsToBuy.forEach(({ product }) => {
+    user.cart = user.cart.filter(
+      (item) => item.product._id.toString() !== product._id.toString()
+    );
+  });
+
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Purchase successful",
+    purchasedProducts: productsToBuy,
+  });
+});
+
 exports.syncCart = catchAsyncErrors(async (req, res, next) => {
   const userId = req.user._id;
   const { cartItems } = req.body;
