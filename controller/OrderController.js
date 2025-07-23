@@ -65,6 +65,15 @@ exports.getOrderHistory = catchAsyncErrors(async (req, res, next) => {
   res.status(200).json(orderHistory);
 });
 
+// get all orders
+exports.getAllOrders = catchAsyncErrors(async (req, res, next) => {
+  const orders = await Order.find({user: req.user._id});
+
+  res.status(200).json({
+    success: true,
+    orders,
+  });
+});
 
 // get all orders =======admin only
 exports.getAllOrdersAdmin = catchAsyncErrors(async (req, res, next) => {
