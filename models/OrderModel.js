@@ -80,7 +80,26 @@ const OrderSchema = new mongoose.Schema({
     required: true,
     default: 0,
   },
-  
+  shippingPrice: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  totalPrice: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  orderStatus: {
+    type: String,
+    required: true,
+    default: "In process",
+  },
+  deliveredAt: Date,
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 module.exports = mongoose.model("Order", OrderSchema);
