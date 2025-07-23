@@ -5,8 +5,12 @@ const {
 } = require("../controller/UserController");
 
 const {
-  sendOtpToEmail,
- 
+  isAuthenticatedUser,
+  authorizedRoles,
+  auth,
+} = require("../middleware/auth");
+
+const router = express.Router();
 
 
 router.route("/me/sessions").get(isAuthenticatedUser, getUserSessions);
