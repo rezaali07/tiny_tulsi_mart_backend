@@ -151,7 +151,7 @@ exports.loginUser = catchAsyncErrors(async (req, res, next) => {
     const message = `Your OTP for login is: ${otp}\nIt is valid for 5 minutes.`;
     await sendEmail({
       email,
-      subject: "NextLearn - Login OTP Verification",
+      subject: "TinyTulsiMart - Login OTP Verification",
       message,
     });
 
