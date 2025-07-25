@@ -82,6 +82,25 @@ exports.sendOtpToEmail = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
+// ========================
+// VERIFY OTP for Login 2FA
+exports.verifyLoginOtp = catchAsyncErrors(async (req, res, next) => {
+  const { email, otp, deviceId } = req.body;
+
+  if (!email || !otp || !deviceId) {
+    return next(new ErrorHandler("Email, OTP and Device ID are required", 400));
+  }
+
+  // Find user with matching email, otp, and not expired
+  const user = await User.findOne({
+    email,
+    otp,
+    otpExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return next(new ErrorHandler("Invalid or expired OTP", 400));
+  }
 
   // OTP valid: clear otp fields
   user.otp = undefined;
