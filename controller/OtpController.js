@@ -123,6 +123,57 @@ exports.sendOtpToEmail = catchAsyncErrors(async (req, res, next) => {
 });
 
 
+// ========================
+// Step 1: Send OTP to user's email before password update
+exports.sendUpdatePasswordOtp = catchAsyncErrors(async (req, res, next) => {
+  console.log("sendUpdatePasswordOtp called");
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    console.log("User not found in sendUpdatePasswordOtp");
+    return next(new ErrorHandler("User not found", 404));
+  }
+
+  const otp = otpGenerator.generate(6, {
+    digits: true,
+    lowerCaseAlphabets: false,
+    upperCaseAlphabets: false,
+    specialChars: false,
+  });
+
+  console.log(`Generated OTP: ${otp}`);
+
+  user.otp = otp;
+  user.otpExpires = Date.now() + 5 * 60 * 1000; // Valid for 5 mins
+  await user.save({ validateBeforeSave: false });
+  console.log("OTP and expiration saved to user");
+
+  await sendMail({
+    email: user.email,
+    subject: "Update Password - OTP Verification",
+    message: `Your OTP for updating password is: ${otp}\nIt is valid for 5 minutes.`,
+  });
+  console.log("OTP email sent");
+
+  res.status(200).json({
+    success: true,
+    message: "OTP sent to your email for password update.",
+  });
+  console.log("Response sent: OTP sent to your email for password update");
+});
+
+// Step 2: Verify OTP and update password
+exports.verifyUpdatePasswordOtp = catchAsyncErrors(async (req, res, next) => {
+  console.log("verifyUpdatePasswordOtp called with body:", req.body);
+
+  const { otp, oldPassword, newPassword, passwordConfirm } = req.body;
+
+ 
+  if (!otp || !oldPassword || !newPassword || !passwordConfirm) {
+    console.log("Validation failed: missing fields");
+    return next(new ErrorHandler("All fields are required", 400));
+  }
+
   
   const user = await User.findById(req.user.id).select("+otp +otpExpires +password +passwordHistory");
   if (!user) {
