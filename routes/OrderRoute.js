@@ -3,7 +3,8 @@ const {
   createOrder,
   getSingleOrder,
   getAllOrders,
-
+  getAllOrdersAdmin,
+  updateOrderAdmin,
   deleteOrderAdmin,
   createOrderHistory,
   getOrderHistory,
@@ -15,7 +16,9 @@ router.route("/order/new").post(isAuthenticatedUser, createOrder);
 router.route("/order/:id").get(isAuthenticatedUser, getSingleOrder);
 router.route("/orders/me").get(isAuthenticatedUser, getAllOrders);
 
-
+router
+  .route("/admin/order/:id")
+  .put(isAuthenticatedUser, authorizedRoles("admin"), updateOrderAdmin);
 router
   .route("/admin/order/:id")
   .delete(isAuthenticatedUser, authorizedRoles("admin"), deleteOrderAdmin);
