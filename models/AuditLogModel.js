@@ -17,7 +17,8 @@ const auditLogSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  
+  ip: String,
+  userAgent: String
 });
 
 module.exports = mongoose.model("AuditLog", auditLogSchema);
