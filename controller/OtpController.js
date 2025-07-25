@@ -54,6 +54,28 @@ exports.sendOtpToEmail = catchAsyncErrors(async (req, res, next) => {
   // Delete all OTPs for this email after successful registration
   await Otp.deleteMany({ email });
 
+  // Generate JWT token for new user
+  const token = user.getJwtToken();
+
+  res.status(201).json({
+    success: true,
+    message: "User registered successfully",
+    token,
+    user,
+  });
+});
+
+// ========================
+// SEND OTP for Login 2FA
+exports.sendLoginOtp = catchAsyncErrors(async (req, res, next) => {
+  const { email } = req.body;
+
+  // Check if user exists
+  const user = await User.findOne({ email });
+  if (!user) {
+    return next(new ErrorHandler("User not found with this email", 400));
+  }
+
   // Generate 6-digit OTP
   const otp = otpGenerator.generate(6, {
     digits: true,
