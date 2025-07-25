@@ -17,6 +17,27 @@ dotenv.config({
     path: "./config/.env",
 });
 
+// connect database
+connectDatabase();
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// SSL mkcert certificate
+const sslOptions = {
+    key: fs.readFileSync("localhost-key.pem"),
+    cert: fs.readFileSync("localhost.pem"),
+    requestCert: false,
+    rejectUnauthorized: false,
+};
+
+// create HTTPS server
+const server = https.createServer(sslOptions, app).listen(process.env.PORT, () => {
+    console.log(`✅ Secure server is working on https://localhost:${process.env.PORT}`);
+});
 
 
 // unhandled promise rejections

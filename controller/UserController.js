@@ -84,7 +84,7 @@ exports.loginUser = catchAsyncErrors(async (req, res, next) => {
   if (user.isLocked) {
     return next(
       new ErrorHandler(
-        "Account is locked due to too many failed login attempts. Please reset your password to unlock.",
+        "Account is locked due to too many failed login attempts(exceed 5 times). Please reset your password to unlock.",
         403
       )
     );
@@ -101,7 +101,7 @@ exports.loginUser = catchAsyncErrors(async (req, res, next) => {
 
   // Check if device is trusted
   if (user.trustedDevices && user.trustedDevices.includes(deviceId)) {
-    // Trusted device — proceed with login
+    
 
     const token = user.getJwtToken();
 
@@ -274,12 +274,12 @@ exports.forgetPassword = catchAsyncErrors(async (req, res, next) => {
   await user.save({ validateBeforeSave: false });
 
   const resetPasswordUrl = `https://localhost:3000/password/reset/${resetToken}`;
-  const message = `Forgot your password? Click the link below : \n\n ${resetPasswordUrl}`;
+  const message = `Forgot your password? Click the link below : \n\n ${resetPasswordUrl} \n\n This link will expire in 15 minutes `;
 
   try {
     await sendEmail({
       email: user.email,
-      subject: "Your password reset token (valid for 10 minutes)",
+      subject: "Your password reset token (valid for 15 minutes)",
       message,
     });
 
@@ -300,25 +300,124 @@ exports.forgetPassword = catchAsyncErrors(async (req, res, next) => {
   }
 });
 
+// // Reset password
+// exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
+//   const { token } = req.params;
+
+//   const resetPasswordToken = crypto
+//     .createHash("sha256")
+//     .update(token)
+//     .digest("hex");
+
+//   const user = await User.findOne({
+//     resetPasswordToken,
+//     resetPasswordTime: { $gt: Date.now() },
+//   }).select("+password passwordHistory isLocked loginAttempts");
+
+//   if (!user) {
+//     return next(new ErrorHandler("Invalid or expired reset token", 400));
+//   }
+
+//   const { password, passwordConfirm } = req.body;
+
+//   if (!password || !passwordConfirm) {
+//     return next(new ErrorHandler("Both password fields are required", 400));
+//   }
+
+//   if (password !== passwordConfirm) {
+//     return next(new ErrorHandler("Passwords do not match", 400));
+//   }
+
+//   if (!isStrongPassword(password)) {
+//     return next(
+//       new ErrorHandler(
+//         "Password must be 8-100 characters long and include uppercase, lowercase, number, and special character.",
+//         400
+//       )
+//     );
+//   }
+
+//   // Check against last 5 passwords
+//   const reused = await Promise.any(
+//     (user.passwordHistory || []).slice(-5).map((oldHash) =>
+//       bcrypt.compare(password, oldHash)
+//     )
+//   ).catch(() => false);
+
+//   if (reused === true) {
+//     return next(
+//       new ErrorHandler("You cannot reuse your last 5 passwords", 400)
+//     );
+//   }
+
+//   // Update password history
+//   user.passwordHistory = user.passwordHistory || [];
+
+
+//   // Set new password and clear reset token/time
+//   user.password = password;
+//   user.resetPasswordToken = undefined;
+//   user.resetPasswordTime = undefined;
+
+//   // Reset lock and attempts to unlock user
+//   user.isLocked = false;
+//   user.loginAttempts = 0;
+
+//   await user.save();
+
+//   // Audit log
+//   await AuditLog.create({
+//     user: user._id,
+//     action: "reset-password",
+//     details: "User successfully reset password",
+//     ip: req.ip,
+//     userAgent: req.headers["user-agent"],
+//   });
+
+//   // Send fresh JWT token
+//   sendToken(user, 200, res);
+// });
+// // 
+
+
 // Reset password
 exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
   const { token } = req.params;
 
+  console.log("🔑 Incoming raw token:", token);
+
+  // Hash incoming token
   const resetPasswordToken = crypto
     .createHash("sha256")
     .update(token)
     .digest("hex");
 
+  console.log("🧪 Hashed token:", resetPasswordToken);
+
+  // Find user with this hashed token and check token expiration
   const user = await User.findOne({
     resetPasswordToken,
-    resetPasswordTime: { $gt: Date.now() },
+    resetPasswordExpire: { $gt: Date.now() },
   }).select("+password passwordHistory isLocked loginAttempts");
 
   if (!user) {
+    console.log("❌ No user found with this token or token expired.");
+
+    // Extra: Try to find user ignoring expiration to debug
+    const userIgnoreExpiry = await User.findOne({ resetPasswordToken });
+    if (userIgnoreExpiry) {
+      console.log("⚠️ User found but token expired:", userIgnoreExpiry.email, "Token expiry:", userIgnoreExpiry.resetPasswordTime);
+    } else {
+      console.log("⚠️ No user found with this token at all.");
+    }
+
     return next(new ErrorHandler("Invalid or expired reset token", 400));
   }
 
+  console.log("✅ User found:", user.email);
+
   const { password, passwordConfirm } = req.body;
+  console.log("📦 Received passwords:", { password, passwordConfirm });
 
   if (!password || !passwordConfirm) {
     return next(new ErrorHandler("Both password fields are required", 400));
@@ -337,7 +436,7 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
     );
   }
 
-  // Check against last 5 passwords
+  // Check last 5 passwords to prevent reuse
   const reused = await Promise.any(
     (user.passwordHistory || []).slice(-5).map((oldHash) =>
       bcrypt.compare(password, oldHash)
@@ -345,27 +444,21 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
   ).catch(() => false);
 
   if (reused === true) {
-    return next(
-      new ErrorHandler("You cannot reuse your last 5 passwords", 400)
-    );
+    return next(new ErrorHandler("You cannot reuse your last 5 passwords", 400));
   }
 
-  // Update password history
   user.passwordHistory = user.passwordHistory || [];
-  
 
-  // Set new password and clear reset token/time
   user.password = password;
   user.resetPasswordToken = undefined;
   user.resetPasswordTime = undefined;
-
-  // Reset lock and attempts to unlock user
   user.isLocked = false;
   user.loginAttempts = 0;
 
   await user.save();
 
-  // Audit log
+  console.log("🔐 Password updated successfully");
+
   await AuditLog.create({
     user: user._id,
     action: "reset-password",
@@ -374,10 +467,10 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
     userAgent: req.headers["user-agent"],
   });
 
-  // Send fresh JWT token
   sendToken(user, 200, res);
 });
-// 
+
+
 
 
 
@@ -569,7 +662,7 @@ exports.userDetails = catchAsyncErrors(async (req, res, next) => {
 
 
 
-// passwordController.js
+// passwordController
 exports.checkPasswordReuse = async (req, res) => {
   const { password } = req.body;
   const user = await User.findById(req.user._id).select("passwordHistory");

@@ -151,7 +151,7 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Generate JWT token
+// Generate a signed JWT token for the authenticated user.
 userSchema.methods.getJwtToken = function () {
   return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
@@ -204,3 +204,5 @@ userSchema.methods.clearOtp = function () {
 };
 
 module.exports = mongoose.model("User", userSchema);
+
+

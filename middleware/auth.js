@@ -8,6 +8,29 @@ const User = require("../models/UserModel");
 
 
 
+// exports.isAuthenticatedUser = catchAsyncErrors(async (req, res, next) => {
+//   const { token } = req.cookies;
+//   if (!token) {
+//     return next(new ErrorHandler("Please login to continue", 401));
+//   }
+
+//   const decodedData = jwt.verify(token, process.env.JWT_SECRET);
+//   const user = await User.findById(decodedData.id);
+
+//   if (!user) return next(new ErrorHandler("User not found", 401));
+
+//   const session = user.sessions.find((s) => s.token === token);
+//   if (!session) {
+//     return next(new ErrorHandler("Session invalid or expired", 401));
+//   }
+
+//   session.lastActive = new Date();
+//   await user.save();
+
+//   req.user = user;
+//   next();
+// });
+
 exports.isAuthenticatedUser = catchAsyncErrors(async (req, res, next) => {
   const { token } = req.cookies;
   if (!token) {
@@ -24,6 +47,17 @@ exports.isAuthenticatedUser = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Session invalid or expired", 401));
   }
 
+  // Check for 15 minutes of inactivity
+  const now = Date.now();
+  const lastActive = new Date(session.lastActive).getTime();
+  if (now - lastActive > 15 * 60 * 1000) {
+    // Remove expired session
+    user.sessions = user.sessions.filter((s) => s.token !== token);
+    await user.save();
+    return next(new ErrorHandler("Session expired due to inactivity", 401));
+  }
+
+
   session.lastActive = new Date();
   await user.save();
 
@@ -32,7 +66,8 @@ exports.isAuthenticatedUser = catchAsyncErrors(async (req, res, next) => {
 });
 
 
-// admin roles here
+
+// admin roles here 
 exports.authorizedRoles = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
