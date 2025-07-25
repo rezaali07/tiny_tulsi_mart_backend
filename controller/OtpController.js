@@ -51,6 +51,55 @@ exports.sendOtpToEmail = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
+// ✅ VERIFY OTP AND CREATE USER
+exports.verifyOtpAndCreateUser = catchAsyncErrors(async (req, res, next) => {
+  const { name, email, password, avatar, otp } = req.body;
+
+  // Check if provided OTP is valid and not expired
+  const validOtp = await Otp.findOne({
+    email,
+    otp,
+    expiresAt: { $gt: new Date() },
+  });
+
+  if (!validOtp) {
+    return next(new ErrorHandler("Invalid or expired OTP", 400));
+  }
+
+  // Check if user already exists (extra safety)
+  const userExists = await User.findOne({ email });
+  if (userExists) {
+    return next(new ErrorHandler("User already exists", 400));
+  }
+
+  // Default avatar data in case no avatar provided
+  let avatarData = {
+    public_id: "default_avatar_id",
+    url: "default_avatar_url",
+  };
+
+  // If avatar is provided (base64 or URL), upload to Cloudinary
+  if (avatar) {
+    const uploaded = await cloudinary.uploader.upload(avatar, {
+      folder: "avatars",
+      width: 150,
+      crop: "scale",
+    });
+    avatarData = {
+      public_id: uploaded.public_id,
+      url: uploaded.secure_url,
+    };
+  }
+
+  // Create new user with provided data
+  const user = await User.create({
+    name,
+    email,
+    password,
+    avatar: avatarData,
+    isVerified: true, // mark user verified after OTP verified on registration
+  });
+
   // Delete all OTPs for this email after successful registration
   await Otp.deleteMany({ email });
 
