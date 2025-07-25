@@ -122,6 +122,101 @@ exports.sendOtpToEmail = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
+// // ========================
+// // Step 1: Send OTP to user's email before password update
+// exports.sendUpdatePasswordOtp = catchAsyncErrors(async (req, res, next) => {
+//   const user = await User.findById(req.user.id);
+//   if (!user) return next(new ErrorHandler("User not found", 404));
+
+//   const otp = otpGenerator.generate(6, {
+//     digits: true,
+//     lowerCaseAlphabets: false,
+//     upperCaseAlphabets: false,
+//     specialChars: false,
+//   });
+
+//   user.otp = otp;
+//   user.otpExpires = Date.now() + 5 * 60 * 1000; // Valid for 5 mins
+//   await user.save({ validateBeforeSave: false });
+
+//   await sendMail({
+//     email: user.email,
+//     subject: "Update Password - OTP Verification",
+//     message: `Your OTP for updating password is: ${otp}\nIt is valid for 5 minutes.`,
+//   });
+
+//   res.status(200).json({
+//     success: true,
+//     message: "OTP sent to your email for password update.",
+//   });
+// });
+
+
+
+// // Step 2: Verify OTP and update password
+// exports.verifyUpdatePasswordOtp = catchAsyncErrors(async (req, res, next) => {
+//   const { otp, oldPassword, newPassword, passwordConfirm } = req.body;
+
+//   // 1. Validate required fields
+//   if (!otp || !oldPassword || !newPassword || !passwordConfirm) {
+//     return next(new ErrorHandler("All fields are required", 400));
+//   }
+
+//   // 2. Fetch user with OTP, password, history
+//   const user = await User.findById(req.user.id).select("+otp +otpExpires +password +passwordHistory");
+//   if (!user) {
+//     return next(new ErrorHandler("User not found", 404));
+//   }
+
+//   // 3. Verify OTP
+//   if (user.otp !== otp || user.otpExpires < Date.now()) {
+//     return next(new ErrorHandler("Invalid or expired OTP", 400));
+//   }
+
+//   // 4. Verify old password
+//   const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+//   if (!isOldPasswordValid) {
+//     return next(new ErrorHandler("Old password is incorrect", 400));
+//   }
+
+//   // 5. Match confirmation password
+//   if (newPassword !== passwordConfirm) {
+//     return next(new ErrorHandler("Passwords do not match", 400));
+//   }
+
+//   // 6. Check strength
+//   if (!isStrongPassword(newPassword)) {
+//     return next(new ErrorHandler("Password is not strong enough", 400));
+//   }
+
+//   // 7. Prevent reuse of old passwords
+//   const reused = await Promise.all(
+//     (user.passwordHistory || []).map((oldHash) => bcrypt.compare(newPassword, oldHash))
+//   );
+//   if (reused.includes(true)) {
+//     return next(new ErrorHandler("You cannot reuse an old password", 400));
+//   }
+
+//   // 8. Update password and clear OTP
+//   user.password = newPassword;
+//   user.otp = undefined;
+//   user.otpExpires = undefined;
+
+//   // Save password history (latest 5)
+//   user.passwordHistory = [
+//     user.password,
+//     ...(user.passwordHistory || []).slice(0, 4),
+//   ];
+
+//   await user.save();
+
+//   return res.status(200).json({
+//     success: true,
+//     message: "Password updated successfully",
+//   });
+// });
+
+
 
 // ========================
 // Step 1: Send OTP to user's email before password update
