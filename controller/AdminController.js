@@ -40,6 +40,16 @@ exports.getAuditLogs = async (req, res, next) => {
       timestamp: log.timestamp,
     }));
 
+    // Total count for pagination
+    const totalLogs = await AuditLog.countDocuments();
+
+    res.status(200).json({
+      success: true,
+      logs,
+      totalLogs,
+      page,
+      totalPages: Math.ceil(totalLogs / limit),
+    });
   } catch (error) {
     next(error);
   }
