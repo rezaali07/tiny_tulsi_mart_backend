@@ -138,7 +138,7 @@ exports.sendLoginOtp = catchAsyncErrors(async (req, res, next) => {
   user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
   await user.save({ validateBeforeSave: false });
 
-  // Send OTP email
+  
   const message = `Your OTP for login is: ${otp}\nIt is valid for 5 minutes.`;
 
   await sendMail({

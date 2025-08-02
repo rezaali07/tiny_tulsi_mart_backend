@@ -8,29 +8,6 @@ const User = require("../models/UserModel");
 
 
 
-// exports.isAuthenticatedUser = catchAsyncErrors(async (req, res, next) => {
-//   const { token } = req.cookies;
-//   if (!token) {
-//     return next(new ErrorHandler("Please login to continue", 401));
-//   }
-
-//   const decodedData = jwt.verify(token, process.env.JWT_SECRET);
-//   const user = await User.findById(decodedData.id);
-
-//   if (!user) return next(new ErrorHandler("User not found", 401));
-
-//   const session = user.sessions.find((s) => s.token === token);
-//   if (!session) {
-//     return next(new ErrorHandler("Session invalid or expired", 401));
-//   }
-
-//   session.lastActive = new Date();
-//   await user.save();
-
-//   req.user = user;
-//   next();
-// });
-
 exports.isAuthenticatedUser = catchAsyncErrors(async (req, res, next) => {
   const { token } = req.cookies;
   if (!token) {

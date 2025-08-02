@@ -32,8 +32,7 @@ exports.getAuditLogs = async (req, res, next) => {
 
     // Map logs to include user info for frontend
     const logs = logsArray.map(log => ({
-      user: userMap[log.user] || null,  // {name, email} or null if no user found
-      action: log.action,
+      user: userMap[log.user] || null,  
       details: log.details,
       ip: log.ip,
       userAgent: log.userAgent,

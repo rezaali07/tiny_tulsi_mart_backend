@@ -15,7 +15,7 @@ const logger = winston.createLogger({
       tryReconnect: true,
       options: { useUnifiedTopology: true },
       capped: true,
-      expireAfterSeconds: 60 * 60 * 24 * 30, // logs expire after 30 days
+      expireAfterSeconds: 60 * 60 * 24 * 30, 
     }),
   ],
 });
