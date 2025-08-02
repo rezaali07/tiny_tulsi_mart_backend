@@ -61,6 +61,112 @@ exports.createUser = catchAsyncErrors(async (req, res, next) => {
 });
 
 // Updated loginUser with 2FA and device trust logic
+// exports.loginUser = catchAsyncErrors(async (req, res, next) => {
+//   const { email, password, deviceId } = req.body;
+
+//   if (!email || !password) {
+//     return next(new ErrorHandler("Please enter email & password", 400));
+//   }
+
+//   if (!deviceId) {
+//     return next(new ErrorHandler("Device ID is required for login", 400));
+//   }
+
+//   // Fetch user with needed fields including trustedDevices
+//   const user = await User.findOne({ email }).select(
+//     "+password +loginAttempts +isLocked +trustedDevices +otp +otpExpires"
+//   );
+
+//   if (!user) {
+//     return next(new ErrorHandler("User not found with this email", 401));
+//   }
+
+//   if (user.isLocked) {
+//     return next(
+//       new ErrorHandler(
+//         "Account is locked due to too many failed login attempts(exceed 5 times). Please reset your password to unlock.",
+//         403
+//       )
+//     );
+//   }
+
+//   const isPasswordMatched = await user.comparePassword(password);
+
+//   if (!isPasswordMatched) {
+//     await user.incrementLoginAttempts();
+//     return next(new ErrorHandler("Invalid password", 401));
+//   }
+
+//   await user.resetLoginAttempts();
+
+//   // Check if device is trusted
+//   if (user.trustedDevices && user.trustedDevices.includes(deviceId)) {
+    
+
+//     const token = user.getJwtToken();
+
+//     user.sessions.push({
+//       token,
+//       ip: req.ip,
+//       device: req.headers["user-agent"] || "Unknown",
+//       createdAt: new Date(),
+//       lastActive: new Date(),
+//     });
+//     await user.save();
+
+//     await AuditLog.create({
+//       user: user._id,
+//       action: "login",
+//       details: `User logged in`,
+//       ip: req.ip,
+//       userAgent: req.headers["user-agent"] || "Unknown",
+//     });
+
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       expires: new Date(Date.now() + 30 * 60 * 1000),
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       token,
+//       user,
+//       requiresOtp: false,
+//     });
+//   } else {
+//     // New device detected → generate and send OTP
+
+//     const otp = otpGenerator.generate(6, {
+//       digits: true,
+//       upperCaseAlphabets: false,
+//       specialChars: false,
+//       lowerCaseAlphabets: false,
+//     });
+
+//     user.otp = otp;
+//     user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes expiry
+//     await user.save({ validateBeforeSave: false });
+
+//     // Send OTP email
+//     const message = `Your OTP for login is: ${otp}\nIt is valid for 5 minutes.`;
+//     await sendEmail({
+//       email,
+//       subject: "TinyTulsiMart - Login OTP Verification",
+//       message,
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message:
+//         "New device detected. Please verify OTP sent to your email to continue login.",
+//       requiresOtp: true,
+//     });
+//   }
+// });
+
+
+const LOCK_TIME = 15 * 60 * 1000;
+
 exports.loginUser = catchAsyncErrors(async (req, res, next) => {
   const { email, password, deviceId } = req.body;
 
@@ -72,37 +178,44 @@ exports.loginUser = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Device ID is required for login", 400));
   }
 
-  // Fetch user with needed fields including trustedDevices
   const user = await User.findOne({ email }).select(
-    "+password +loginAttempts +isLocked +trustedDevices +otp +otpExpires"
+    "+password +loginAttempts +lockUntil +trustedDevices +otp +otpExpires +sessions"
   );
 
   if (!user) {
     return next(new ErrorHandler("User not found with this email", 401));
   }
 
-  if (user.isLocked) {
+  // Check if account is locked temporarily
+  if (user.lockUntil && user.lockUntil > Date.now()) {
+    const remaining = Math.ceil((user.lockUntil - Date.now()) / 60000);
     return next(
-      new ErrorHandler(
-        "Account is locked due to too many failed login attempts(exceed 5 times). Please reset your password to unlock.",
-        403
-      )
+      new ErrorHandler(`Account is temporarily locked. Try again in ${remaining} minute(s).`, 403)
     );
   }
 
   const isPasswordMatched = await user.comparePassword(password);
 
   if (!isPasswordMatched) {
-    await user.incrementLoginAttempts();
-    return next(new ErrorHandler("Invalid password", 401));
+    user.loginAttempts = (user.loginAttempts || 0) + 1;
+
+    if (user.loginAttempts >= 5) {
+      user.lockUntil = Date.now() + LOCK_TIME;
+    }
+
+    await user.save({ validateBeforeSave: false });
+
+    return next(
+      new ErrorHandler("Invalid password", 401)
+    );
   }
 
-  await user.resetLoginAttempts();
+  // Reset login attempts and unlock account
+  user.loginAttempts = 0;
+  user.lockUntil = undefined;
 
   // Check if device is trusted
   if (user.trustedDevices && user.trustedDevices.includes(deviceId)) {
-    
-
     const token = user.getJwtToken();
 
     user.sessions.push({
@@ -134,8 +247,7 @@ exports.loginUser = catchAsyncErrors(async (req, res, next) => {
       requiresOtp: false,
     });
   } else {
-    // New device detected → generate and send OTP
-
+    // New device → send OTP
     const otp = otpGenerator.generate(6, {
       digits: true,
       upperCaseAlphabets: false,
@@ -144,11 +256,11 @@ exports.loginUser = catchAsyncErrors(async (req, res, next) => {
     });
 
     user.otp = otp;
-    user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes expiry
+    user.otpExpires = Date.now() + 5 * 60 * 1000;
     await user.save({ validateBeforeSave: false });
 
-    // Send OTP email
     const message = `Your OTP for login is: ${otp}\nIt is valid for 5 minutes.`;
+
     await sendEmail({
       email,
       subject: "TinyTulsiMart - Login OTP Verification",

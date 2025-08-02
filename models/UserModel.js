@@ -59,10 +59,16 @@ const userSchema = new mongoose.Schema({
     ],
     default: [],
   },
-  loginAttempts: {
-    type: Number,
-    default: 0,
-  },
+ loginAttempts: {
+  type: Number,
+  default: 0,
+  select: false,
+},
+lockUntil: {
+  type: Date,
+  select: false,
+},
+
   isLocked: {
     type: Boolean,
     default: false,
